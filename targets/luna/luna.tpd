@@ -1,0 +1,23 @@
+target "Neoclipse Target Platform" with source requirements
+
+location "http://download.eclipse.org/releases/luna" {
+
+    org.eclipse.platform.sdk
+    org.eclipse.gef.sdk.feature.group
+    org.eclipse.zest.sdk.feature.group
+
+}
+
+location "http://download.eclipse.org/eclipse/updates/4.4" {
+
+    org.eclipse.pde.junit.runtime
+
+}
+
+location "http://download.eclipse.org/tools/orbit/downloads/drops/R20140525021250/repository/" {
+
+    org.dom4j
+    org.json
+    com.google.gson
+
+}
