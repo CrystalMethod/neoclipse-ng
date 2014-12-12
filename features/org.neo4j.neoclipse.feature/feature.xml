@@ -18,6 +18,21 @@
       %license
    </license>
 
+   <requires>
+      <import plugin="org.eclipse.ui"/>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="org.eclipse.help" version="3.3.100" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.gef"/>
+      <import plugin="org.eclipse.zest.core"/>
+      <import plugin="org.eclipse.zest.layouts"/>
+      <import plugin="org.eclipse.ui.views.properties.tabbed"/>
+      <import plugin="org.eclipse.search"/>
+      <import plugin="com.google.gson"/>
+      <import plugin="org.dom4j"/>
+      <import plugin="org.json"/>
+      <import plugin="org.eclipse.ui.ide"/>
+   </requires>
+
    <plugin
          id="org.neo4j.neoclipse.doc"
          download-size="0"
