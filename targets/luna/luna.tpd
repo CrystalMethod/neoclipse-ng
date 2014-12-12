@@ -5,6 +5,8 @@ location "http://download.eclipse.org/releases/luna" {
     org.eclipse.platform.sdk
     org.eclipse.gef.sdk.feature.group
     org.eclipse.zest.sdk.feature.group
+    org.eclipse.equinox.executable.feature.group
+    org.eclipse.rcp.feature.group
 
 }
 
