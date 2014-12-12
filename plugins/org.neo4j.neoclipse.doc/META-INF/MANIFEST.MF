@@ -1,9 +1,8 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Neoclipse Documentation
+Bundle-Name: %Bundle-Name
 Bundle-SymbolicName: org.neo4j.neoclipse.doc; singleton:=true
 Bundle-Version: 0.0.1.qualifier
-Bundle-Localization: plugin
-Bundle-Vendor: Neo4j.org
+Bundle-Vendor: %Bundle-Vendor
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.eclipse.help;bundle-version="3.3.100"
