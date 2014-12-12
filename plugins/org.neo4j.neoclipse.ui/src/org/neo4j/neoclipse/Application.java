@@ -36,111 +36,104 @@ import org.neo4j.neoclipse.perspective.NeoPerspectiveFactory;
 import org.neo4j.neoclipse.preference.Preferences;
 import org.neo4j.neoclipse.view.NeoGraphViewPart;
 
-public class Application extends WorkbenchAdvisor implements IApplication
-{
+public class Application extends WorkbenchAdvisor implements IApplication {
+
     @Override
-    public WorkbenchWindowAdvisor createWorkbenchWindowAdvisor( final IWorkbenchWindowConfigurer configurer )
-    {
-        return new ApplicationWindowAdvisor( configurer );
+    public WorkbenchWindowAdvisor createWorkbenchWindowAdvisor(final IWorkbenchWindowConfigurer configurer) {
+        return new ApplicationWindowAdvisor(configurer);
     }
 
     @Override
-    public Object start( final IApplicationContext context ) throws Exception
-    {
-        try
-        {
+    public Object start(final IApplicationContext context) throws Exception {
+        try {
             Location workspaceLocation = Platform.getInstanceLocation();
-            if ( !workspaceLocation.isSet() )
-            {
+            if (!workspaceLocation.isSet()) {
                 Location installLocation = Platform.getInstallLocation();
                 String dataPath = installLocation.getURL().getPath() + "neoclipse-workspace" + File.separator;
-                File dir = new File( dataPath );
-                if ( !dir.exists() )
-                {
-                    if ( !dir.mkdirs() )
-                    {
-                        throw new RuntimeException( "Could not create the directory: " + dir );
+                File dir = new File(dataPath);
+                if (!dir.exists()) {
+                    if (!dir.mkdirs()) {
+                        throw new RuntimeException("Could not create the directory: " + dir);
                     }
                 }
-                URL dataLocation = new URL( "file", null, dataPath );
-                workspaceLocation.set( dataLocation, false );
+                URL dataLocation = new URL("file", null, dataPath);
+                workspaceLocation.set(dataLocation, false);
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         Display display = PlatformUI.createDisplay();
-        try
-        {
-            int returnCode = PlatformUI.createAndRunWorkbench( display, this );
-            if ( returnCode == PlatformUI.RETURN_RESTART )
-            {
+        try {
+            int returnCode = PlatformUI.createAndRunWorkbench(display, this);
+            if (returnCode == PlatformUI.RETURN_RESTART) {
                 return IApplication.EXIT_RESTART;
             }
             return IApplication.EXIT_OK;
-        }
-        finally
-        {
+        } finally {
             display.dispose();
         }
     }
 
     @Override
-    public void stop()
-    {
-        if ( !PlatformUI.isWorkbenchRunning() )
-        {
+    public void stop() {
+        if (!PlatformUI.isWorkbenchRunning()) {
             return;
         }
         final IWorkbench workbench = PlatformUI.getWorkbench();
         final Display display = workbench.getDisplay();
-        display.syncExec( new Runnable()
-        {
+        display.syncExec(new Runnable() {
             @Override
-            public void run()
-            {
-                if ( !display.isDisposed() )
-                {
+            public void run() {
+                if (!display.isDisposed()) {
                     workbench.close();
                 }
             }
-        } );
+        });
     }
 
     @Override
-    public String getInitialWindowPerspectiveId()
-    {
+    public String getInitialWindowPerspectiveId() {
         return NeoPerspectiveFactory.ID;
     }
 
     @Override
-    public void preWindowOpen( final IWorkbenchWindowConfigurer wwc )
-    {
-        wwc.setShowMenuBar( false );
-        wwc.setShowFastViewBars( false );
-        wwc.setShowStatusLine( true );
-        wwc.setShowCoolBar( true );
+    public void preWindowOpen(final IWorkbenchWindowConfigurer wwc) {
+        wwc.setShowMenuBar(false);
+        wwc.setShowFastViewBars(false);
+        wwc.setShowStatusLine(true);
+        wwc.setShowCoolBar(true);
     }
 
     @Override
-    public void postStartup()
-    {
+    public void postStartup() {
         super.postStartup();
-        // show help on startup if the user wants it
-        boolean showHelp = Activator.getDefault().getPreferenceStore().getBoolean( Preferences.HELP_ON_START );
-        if ( showHelp )
-        {
-            IWorkbenchHelpSystem helpSystem = PlatformUI.getWorkbench().getHelpSystem();
-            helpSystem.displayDynamicHelp();
+        Display.getDefault().asyncExec(new Runnable() {
 
-            NeoGraphViewPart graphView = (NeoGraphViewPart) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().findView(
-                    NeoGraphViewPart.ID );
-            if ( graphView != null )
-            {
-                graphView.setFocus();
+            @Override
+            public void run() {
+
+                try {
+                    // show help on startup if the user wants it
+                    boolean showHelp = Activator.getDefault().getPreferenceStore()
+                            .getBoolean(Preferences.HELP_ON_START);
+                    if (showHelp) {
+                        IWorkbenchHelpSystem helpSystem = PlatformUI.getWorkbench().getHelpSystem();
+                        helpSystem.displayDynamicHelp();
+
+                        NeoGraphViewPart graphView = (NeoGraphViewPart) PlatformUI.getWorkbench()
+                                .getActiveWorkbenchWindow().getActivePage().findView(NeoGraphViewPart.ID);
+                        if (graphView != null) {
+                            graphView.setFocus();
+                        }
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             }
-        }
+        });
+
     }
 }
