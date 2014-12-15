@@ -23,3 +23,10 @@ location "http://download.eclipse.org/tools/orbit/downloads/drops/R2014052502125
     com.google.gson
 
 }
+
+location "http://oss.opensagres.fr/CodeMirror-Eclipse/1.0.0-SNAPSHOT/" {
+
+    codemirror.eclipse.core.feature.feature.group
+    codemirror.eclipse.cypher.feature.feature.group
+
+}

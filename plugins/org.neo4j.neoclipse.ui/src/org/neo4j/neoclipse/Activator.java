@@ -40,11 +40,15 @@ import org.neo4j.neoclipse.view.NeoGraphViewPart;
 import org.neo4j.neoclipse.view.UiHelper;
 import org.osgi.framework.BundleContext;
 
+import codemirror.eclipse.swt.builder.CMBuilderRegistry;
+import codemirror.eclipse.swt.cypher.builder.CMCypherBuilder;
+import codemirror.eclipse.ui.resources.CMResourcesRegistry;
+
 /**
  * The activator class controls the plug-in life cycle.
  */
-public class Activator extends AbstractUIPlugin
-{
+public class Activator extends AbstractUIPlugin {
+
     /**
      * The plug-in ID.
      */
@@ -66,10 +70,14 @@ public class Activator extends AbstractUIPlugin
      * Starts up the plug-in and initializes the neo service.
      */
     @Override
-    public void start( final BundleContext context ) throws Exception
-    {
-        super.start( context );
+    public void start(final BundleContext context) throws Exception {
+        super.start(context);
         PLUGIN = this;
+
+        CMBuilderRegistry.getInstance().register(
+                new CMCypherBuilder(CMResourcesRegistry.getRegistry()
+                        .getURL("")));
+
         graphDbServiceManager = new GraphDbServiceManager();
         aliasManager = new AliasManager();
         aliasManager.loadAliases();
@@ -79,14 +87,13 @@ public class Activator extends AbstractUIPlugin
      * Stops the plug-in and shuts down the neo4j service.
      */
     @Override
-    public void stop( final BundleContext context ) throws Exception
-    {
+    public void stop(final BundleContext context) throws Exception {
         graphDbServiceManager.shutdownGraphDbService();
         graphDbServiceManager.stopExecutingTasks();
         aliasManager.saveAliases();
 
         PLUGIN = null;
-        super.stop( context );
+        super.stop(context);
     }
 
     /**
@@ -94,31 +101,28 @@ public class Activator extends AbstractUIPlugin
      *
      * @return the shared instance
      */
-    public static Activator getDefault()
-    {
+    public static Activator getDefault() {
         return PLUGIN;
     }
 
     /**
      * Returns the service manager.
      */
-    public GraphDbServiceManager getGraphDbServiceManager()
-    {
+    public GraphDbServiceManager getGraphDbServiceManager() {
         return graphDbServiceManager;
     }
 
     /**
      * Show the Neo4j preference page.
      *
-     * @param filtered only show Neo4j properties when true
+     * @param filtered
+     *            only show Neo4j properties when true
      * @return
      */
-    public int showPreferenceDialog( final boolean filtered )
-    {
-        PreferenceDialog pref = PreferencesUtil.createPreferenceDialogOn( null,
-                "org.neo4j.neoclipse.preference.NeoPreferencePage", ( filtered ? new String[] {} : null ), null );
-        if ( pref != null )
-        {
+    public int showPreferenceDialog(final boolean filtered) {
+        PreferenceDialog pref = PreferencesUtil.createPreferenceDialogOn(null,
+                "org.neo4j.neoclipse.preference.NeoPreferencePage", (filtered ? new String[] {} : null), null);
+        if (pref != null) {
             return pref.open();
         }
         return 1;
@@ -127,57 +131,44 @@ public class Activator extends AbstractUIPlugin
     /**
      * Show the Neo4j Decorator preference page.
      *
-     * @param filtered only show Neo4j properties when true
+     * @param filtered
+     *            only show Neo4j properties when true
      * @return
      */
-    public int showDecoratorPreferenceDialog( final boolean filtered )
-    {
-        PreferenceDialog pref = PreferencesUtil.createPreferenceDialogOn( null,
-                "org.neo4j.neoclipse.preference.NeoDecoratorPreferencePage", ( filtered ? new String[] {} : null ),
-                null );
-        if ( pref != null )
-        {
+    public int showDecoratorPreferenceDialog(final boolean filtered) {
+        PreferenceDialog pref = PreferencesUtil.createPreferenceDialogOn(null,
+                "org.neo4j.neoclipse.preference.NeoDecoratorPreferencePage", (filtered ? new String[] {} : null), null);
+        if (pref != null) {
             return pref.open();
         }
         return 1;
     }
 
-    public AliasManager getAliasManager()
-    {
+    public AliasManager getAliasManager() {
         return aliasManager;
     }
 
-    public ConnectionsView getConnectionsView()
-    {
-        return getConnectionsView( true );
+    public ConnectionsView getConnectionsView() {
+        return getConnectionsView(true);
     }
 
-    private IWorkbenchPage getActivePage()
-    {
-        if ( getWorkbench() != null && getWorkbench().getActiveWorkbenchWindow() != null )
-        {
+    private IWorkbenchPage getActivePage() {
+        if (getWorkbench() != null && getWorkbench().getActiveWorkbenchWindow() != null) {
             return getWorkbench().getActiveWorkbenchWindow().getActivePage();
         }
         return null;
     }
 
-    public ConnectionsView getConnectionsView( boolean create )
-    {
-        if ( connectionsView == null )
-        {
+    public ConnectionsView getConnectionsView(boolean create) {
+        if (connectionsView == null) {
             IWorkbenchPage page = getActivePage();
-            if ( page != null )
-            {
-                connectionsView = (ConnectionsView) page.findView( ConnectionsView.class.getName() );
-                if ( connectionsView == null && create )
-                {
-                    try
-                    {
-                        connectionsView = (ConnectionsView) page.showView( ConnectionsView.class.getName() );
-                    }
-                    catch ( PartInitException e )
-                    {
-                        throw new RuntimeException( e );
+            if (page != null) {
+                connectionsView = (ConnectionsView) page.findView(ConnectionsView.class.getName());
+                if (connectionsView == null && create) {
+                    try {
+                        connectionsView = (ConnectionsView) page.showView(ConnectionsView.class.getName());
+                    } catch (PartInitException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -186,28 +177,20 @@ public class Activator extends AbstractUIPlugin
         return connectionsView;
     }
 
-    public void setConnectionsView( ConnectionsView connectionsView )
-    {
+    public void setConnectionsView(ConnectionsView connectionsView) {
         this.connectionsView = connectionsView;
     }
 
-    public NeoGraphViewPart getNeoGraphViewPart()
-    {
-        if ( neoGraphViewPart == null )
-        {
+    public NeoGraphViewPart getNeoGraphViewPart() {
+        if (neoGraphViewPart == null) {
             IWorkbenchPage page = getActivePage();
-            if ( page != null )
-            {
-                neoGraphViewPart = (NeoGraphViewPart) page.findView( NeoGraphViewPart.class.getName() );
-                if ( neoGraphViewPart == null )
-                {
-                    try
-                    {
-                        neoGraphViewPart = (NeoGraphViewPart) page.showView( NeoGraphViewPart.class.getName() );
-                    }
-                    catch ( PartInitException e )
-                    {
-                        throw new RuntimeException( e );
+            if (page != null) {
+                neoGraphViewPart = (NeoGraphViewPart) page.findView(NeoGraphViewPart.class.getName());
+                if (neoGraphViewPart == null) {
+                    try {
+                        neoGraphViewPart = (NeoGraphViewPart) page.showView(NeoGraphViewPart.class.getName());
+                    } catch (PartInitException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -215,18 +198,14 @@ public class Activator extends AbstractUIPlugin
         return neoGraphViewPart;
     }
 
-    public void setNeoGraphViewPart( NeoGraphViewPart neoGraphViewPart )
-    {
+    public void setNeoGraphViewPart(NeoGraphViewPart neoGraphViewPart) {
         this.neoGraphViewPart = neoGraphViewPart;
     }
 
-    public void setStatusLineMessage( final String message )
-    {
-        UiHelper.asyncExec( new Runnable()
-        {
+    public void setStatusLineMessage(final String message) {
+        UiHelper.asyncExec(new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
 
                 IWorkbench wb = PlatformUI.getWorkbench();
                 IWorkbenchWindow win = wb.getActiveWorkbenchWindow();
@@ -239,32 +218,28 @@ public class Activator extends AbstractUIPlugin
                 IViewSite vSite = (IViewSite) site;
 
                 IActionBars actionBars = vSite.getActionBars();
-                if ( actionBars == null )
-                {
+                if (actionBars == null) {
                     return;
                 }
 
                 IStatusLineManager statusLineManager = actionBars.getStatusLineManager();
 
-                if ( statusLineManager == null )
-                {
+                if (statusLineManager == null) {
                     return;
                 }
 
-                statusLineManager.setMessage( message );
+                statusLineManager.setMessage(message);
 
             }
-        } );
+        });
     }
 
-    public Alias getSelectedAlias()
-    {
+    public Alias getSelectedAlias() {
         return getConnectionsView().getSelectedAlias();
     }
 
-    public void fireServiceChangedEvent( GraphDbServiceStatus status )
-    {
-        getGraphDbServiceManager().fireServiceChangedEvent( status );
+    public void fireServiceChangedEvent(GraphDbServiceStatus status) {
+        getGraphDbServiceManager().fireServiceChangedEvent(status);
 
     }
 

@@ -206,6 +206,8 @@ conditions in this Agreement.
    <features>
       <feature id="org.neo4j.neoclipse.feature" version="0.0.1.qualifier"/>
       <feature id="org.eclipse.rcp" version="0.0.0"/>
+      <feature id="codemirror.eclipse.core.feature" version="0.0.0"/>
+      <feature id="codemirror.eclipse.cypher.feature" version="0.0.0"/>
    </features>
 
    <configurations>

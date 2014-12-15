@@ -41,7 +41,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.ui.part.ViewPart;
@@ -53,12 +52,17 @@ import org.neo4j.neoclipse.util.DataExportUtils;
 import org.neo4j.neoclipse.view.ErrorMessage;
 import org.neo4j.neoclipse.view.UiHelper;
 
+import codemirror.eclipse.swt.CMControl;
+import codemirror.eclipse.swt.IDirtyListener;
+import codemirror.eclipse.swt.builder.CMBuilder;
+import codemirror.eclipse.swt.builder.CMBuilderRegistry;
+import codemirror.eclipse.swt.cypher.builder.CypherMode;
 
-public class SqlEditorView extends ViewPart implements Listener
-{
+public class SqlEditorView extends ViewPart implements Listener {
 
     public static final String ID = "org.neo4j.neoclipse.editor.SqlEditorView"; //$NON-NLS-1$
-    private Text cypherQueryText;
+
+    // private Text cypherQueryText;
     private CTabFolder tabFolder;
     private Label messageStatus;
     private ToolItem tltmExecuteCypherSql;
@@ -69,282 +73,246 @@ public class SqlEditorView extends ViewPart implements Listener
     private static boolean altKeyPressed = false;
     private static boolean enterKeyPressed = false;
 
-    public SqlEditorView()
-    {
+    private CMControl cypherQueryText;
+
+    public SqlEditorView() {
     }
 
     /**
      * Create contents of the view part.
-     * 
+     *
      * @param parent
      */
     @Override
-    public void createPartControl( Composite parent )
-    {
-        parent.setLayout( new GridLayout( 1, false ) );
-        {
-            ToolBar toolBar = new ToolBar( parent, SWT.FLAT | SWT.RIGHT );
-            {
-                tltmExecuteCypherSql = new ToolItem( toolBar, SWT.PUSH );
-                tltmExecuteCypherSql.setEnabled( false );
-                tltmExecuteCypherSql.setToolTipText( "Execute (ALT+Enter)" );
-                tltmExecuteCypherSql.setImage( Icons.EXECUTE_SQL.image() );
-                tltmExecuteCypherSql.addListener( SWT.Selection, this );
-            }
-        }
+    public void createPartControl(Composite parent) {
+        parent.setLayout(new GridLayout(1, false));
 
-        cypherQueryText = new Text( parent, SWT.BORDER | SWT.WRAP | SWT.V_SCROLL | SWT.MULTI );
+        ToolBar toolBar = new ToolBar(parent, SWT.FLAT | SWT.RIGHT);
+        tltmExecuteCypherSql = new ToolItem(toolBar, SWT.PUSH);
+        tltmExecuteCypherSql.setEnabled(false);
+        tltmExecuteCypherSql.setToolTipText("Execute (ALT+Enter)");
+        tltmExecuteCypherSql.setImage(Icons.EXECUTE_SQL.image());
+        tltmExecuteCypherSql.addListener(SWT.Selection, this);
 
-        cypherQueryText.addKeyListener( new KeyListener()
-        {
+        CMBuilder builder = CMBuilderRegistry.getInstance().getBuilder(CypherMode.INSTANCE);
+        cypherQueryText = new CMControl(builder, parent, SWT.BORDER);
+
+        cypherQueryText.addDirtyListener(new IDirtyListener() {
 
             @Override
-            public void keyReleased( KeyEvent keyEvent )
-            {
-                if ( !validate() )
-                {
+            public void dirtyChanged(boolean dirty) {
+                System.out.println("dirtyChanged");
+                if (dirty) {
+                    validate();
+                }
+            }
+        });
+
+        cypherQueryText.addKeyListener(new KeyListener() {
+
+            @Override
+            public void keyReleased(KeyEvent keyEvent) {
+                if (!validate()) {
                     return;
                 }
 
-                if ( altKeyPressed && keyEvent.keyCode == SWT.CR )
-                {
+                if (altKeyPressed && keyEvent.keyCode == SWT.CR) {
                     enterKeyPressed = true;
-                }
-                else
-                {
+                } else {
                     altKeyPressed = false;
                 }
 
-                if ( altKeyPressed && enterKeyPressed && validate() )
-                {
-                    executeCypherQuery( cypherQueryText.getText() );
+                if (altKeyPressed && enterKeyPressed && validate()) {
+                    executeCypherQuery(cypherQueryText.getText());
                     altKeyPressed = enterKeyPressed = false;
                 }
 
             }
 
             @Override
-            public void keyPressed( KeyEvent keyEvent )
-            {
-                if ( !validate() )
-                {
+            public void keyPressed(KeyEvent keyEvent) {
+                if (!validate()) {
                     return;
                 }
-                if ( keyEvent.keyCode == SWT.ALT )
-                {
+                if (keyEvent.keyCode == SWT.ALT) {
                     altKeyPressed = true;
                 }
             }
-        } );
-        GridData gd_text = new GridData( SWT.FILL, SWT.CENTER, true, false, 1, 1 );
+        });
+
+        GridData gd_text = new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1);
         gd_text.heightHint = 172;
-        cypherQueryText.setLayoutData( gd_text );
+        cypherQueryText.setLayoutData(gd_text);
         {
-            new Label( parent, SWT.NONE );
+            new Label(parent, SWT.NONE);
         }
         {
-            ToolBar toolBar = new ToolBar( parent, SWT.FLAT | SWT.RIGHT );
+            ToolBar exportToolBar = new ToolBar(parent, SWT.FLAT | SWT.RIGHT);
             {
-                exportCsv = new ToolItem( toolBar, SWT.PUSH );
-                exportCsv.setEnabled( false );
-                exportCsv.setToolTipText( "Export to CSV" );
-                exportCsv.setImage( Icons.CSV.image() );
-                exportCsv.addListener( SWT.Selection, this );
+                exportCsv = new ToolItem(exportToolBar, SWT.PUSH);
+                exportCsv.setEnabled(false);
+                exportCsv.setToolTipText("Export to CSV");
+                exportCsv.setImage(Icons.CSV.image());
+                exportCsv.addListener(SWT.Selection, this);
 
-                exportJson = new ToolItem( toolBar, SWT.PUSH );
-                exportJson.setEnabled( false );
-                exportJson.setToolTipText( "Export as Json" );
-                exportJson.setImage( Icons.JSON.image() );
-                exportJson.addListener( SWT.Selection, this );
+                exportJson = new ToolItem(exportToolBar, SWT.PUSH);
+                exportJson.setEnabled(false);
+                exportJson.setToolTipText("Export as Json");
+                exportJson.setImage(Icons.JSON.image());
+                exportJson.addListener(SWT.Selection, this);
 
-                exportXml = new ToolItem( toolBar, SWT.PUSH );
-                exportXml.setEnabled( false );
-                exportXml.setToolTipText( "Export as Xml" );
-                exportXml.setImage( Icons.XML.image() );
-                exportXml.addListener( SWT.Selection, this );
+                exportXml = new ToolItem(exportToolBar, SWT.PUSH);
+                exportXml.setEnabled(false);
+                exportXml.setToolTipText("Export as Xml");
+                exportXml.setImage(Icons.XML.image());
+                exportXml.addListener(SWT.Selection, this);
             }
         }
         {
-            Label label = new Label( parent, SWT.SEPARATOR | SWT.HORIZONTAL );
-            label.setLayoutData( new GridData( SWT.FILL, SWT.CENTER, false, false, 1, 1 ) );
+            Label label = new Label(parent, SWT.SEPARATOR | SWT.HORIZONTAL);
+            label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false, 1, 1));
         }
         {
-            tabFolder = new CTabFolder( parent, SWT.BORDER );
-            tabFolder.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true, 1, 1 ) );
-            tabFolder.setSelectionBackground( Display.getCurrent().getSystemColor(
-                    SWT.COLOR_TITLE_INACTIVE_BACKGROUND_GRADIENT ) );
-            CTabItem resultsTabItem = new CTabItem( tabFolder, SWT.NONE );
-            resultsTabItem.setText( "Results" );
-            tabFolder.setSelection( resultsTabItem );
+            tabFolder = new CTabFolder(parent, SWT.BORDER);
+            tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
+            tabFolder.setSelectionBackground(Display.getCurrent().getSystemColor(
+                    SWT.COLOR_TITLE_INACTIVE_BACKGROUND_GRADIENT));
+            CTabItem resultsTabItem = new CTabItem(tabFolder, SWT.NONE);
+            resultsTabItem.setText("Results");
+            tabFolder.setSelection(resultsTabItem);
         }
         {
-            messageStatus = new Label( parent, SWT.NONE );
-            messageStatus.setTouchEnabled( true );
-            messageStatus.setLayoutData( new GridData( SWT.FILL, SWT.FILL, false, false, 1, 1 ) );
+            messageStatus = new Label(parent, SWT.NONE);
+            messageStatus.setTouchEnabled(true);
+            messageStatus.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false, 1, 1));
         }
     }
 
-
-
-    private void enableDisableToolBars( boolean flag )
-    {
-        exportCsv.setEnabled( flag );
-        exportJson.setEnabled( flag );
-        exportXml.setEnabled( flag );
+    private void enableDisableToolBars(boolean flag) {
+        exportCsv.setEnabled(flag);
+        exportJson.setEnabled(flag);
+        exportXml.setEnabled(flag);
     }
 
-    private boolean validate()
-    {
+    private boolean validate() {
         boolean enableDisable = false;
 
-        if ( !cypherQueryText.getText().trim().isEmpty() )
-        {
+        if (!cypherQueryText.getText().trim().isEmpty()) {
             enableDisable = true;
         }
 
-        tltmExecuteCypherSql.setEnabled( enableDisable );
+        tltmExecuteCypherSql.setEnabled(enableDisable);
         return enableDisable;
     }
 
     @Override
-    public void setFocus()
-    {
+    public void setFocus() {
         cypherQueryText.setFocus();
     }
 
     // This will create the columns for the table
-    private void createColumns( TableViewer tableViewer, Collection<String> titles )
-    {
+    private void createColumns(TableViewer tableViewer, Collection<String> titles) {
 
         TableViewerColumn col = null;
         int columnCount = 0;
-        for ( final String column : titles )
-        {
-            col = createTableViewerColumn( tableViewer, column, columnCount++ );
-            col.setLabelProvider( new ColumnLabelProvider()
-            {
+        for (final String column : titles) {
+            col = createTableViewerColumn(tableViewer, column, columnCount++);
+            col.setLabelProvider(new ColumnLabelProvider() {
                 @Override
-                public String getText( Object element )
-                {
+                public String getText(Object element) {
                     Map<String, Object> rs = (Map<String, Object>) element;
-                    Object value = rs.get( column );
-                    value = ApplicationUtil.getPropertyValue( value );
+                    Object value = rs.get(column);
+                    value = ApplicationUtil.getPropertyValue(value);
                     return value.toString();
                 }
-            } );
+            });
         }
 
     }
 
-    private TableViewerColumn createTableViewerColumn( TableViewer tableViewer, String title, final int colNumber )
-    {
-        final TableViewerColumn viewerColumn = new TableViewerColumn( tableViewer, SWT.NONE, colNumber );
+    private TableViewerColumn createTableViewerColumn(TableViewer tableViewer, String title, final int colNumber) {
+        final TableViewerColumn viewerColumn = new TableViewerColumn(tableViewer, SWT.NONE, colNumber);
         final TableColumn column = viewerColumn.getColumn();
-        column.setText( title );
-        column.setWidth( 150 );
-        column.setResizable( true );
-        column.setMoveable( true );
+        column.setText(title);
+        column.setWidth(150);
+        column.setResizable(true);
+        column.setMoveable(true);
         return viewerColumn;
 
     }
 
     @Override
-    public void handleEvent( Event event )
-    {
+    public void handleEvent(Event event) {
 
-        if ( event.widget == tltmExecuteCypherSql )
-        {
-            executeCypherQuery( cypherQueryText.getText() );
+        if (event.widget == tltmExecuteCypherSql) {
+            executeCypherQuery(cypherQueryText.getText());
 
-        }
-        else if ( event.widget == exportCsv )
-        {
-            try
-            {
-                File file = DataExportUtils.exportToCsv( jsonString );
-                ErrorMessage.showDialog( "CSV Export", "CSV file is created at " + file );
+        } else if (event.widget == exportCsv) {
+            try {
+                File file = DataExportUtils.exportToCsv(jsonString);
+                ErrorMessage.showDialog("CSV Export", "CSV file is created at " + file);
+            } catch (Exception e) {
+                ErrorMessage.showDialog("CSV exporting problem", e);
             }
-            catch ( Exception e )
-            {
-                ErrorMessage.showDialog( "CSV exporting problem", e );
-            }
-        }
-        else if ( event.widget == exportJson )
-        {
-            try
-            {
-                File file = DataExportUtils.exportToJson( jsonString.toString() );
-                ErrorMessage.showDialog( "Json Export", "Json file is created at " + file );
-            }
-            catch ( Exception e )
-            {
-                ErrorMessage.showDialog( "Json exporting problem", e );
+        } else if (event.widget == exportJson) {
+            try {
+                File file = DataExportUtils.exportToJson(jsonString.toString());
+                ErrorMessage.showDialog("Json Export", "Json file is created at " + file);
+            } catch (Exception e) {
+                ErrorMessage.showDialog("Json exporting problem", e);
             }
 
-        }
-        else if ( event.widget == exportXml )
-        {
-            try
-            {
-                File file = DataExportUtils.exportToXml( jsonString );
-                ErrorMessage.showDialog( "XML Export", "XML file is created at " + file );
-            }
-            catch ( Exception e )
-            {
-                ErrorMessage.showDialog( "XML exporting problem", e );
+        } else if (event.widget == exportXml) {
+            try {
+                File file = DataExportUtils.exportToXml(jsonString);
+                ErrorMessage.showDialog("XML Export", "XML file is created at " + file);
+            } catch (Exception e) {
+                ErrorMessage.showDialog("XML exporting problem", e);
             }
         }
     }
 
-    private void executeCypherQuery( final String cypherSql )
-    {
-        UiHelper.asyncExec( new Runnable()
-        {
+    private void executeCypherQuery(final String cypherSql) {
+        UiHelper.asyncExec(new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
                 final GraphDbServiceManager gsm = Activator.getDefault().getGraphDbServiceManager();
-                try
-                {
-                    CypherResultSet cypherResultSet = gsm.executeCypher( cypherSql );
-                    displayResultSet( cypherResultSet );
-                }
-                catch ( Exception e )
-                {
+                try {
+                    CypherResultSet cypherResultSet = gsm.executeCypher(cypherSql);
+                    displayResultSet(cypherResultSet);
+                } catch (Exception e) {
                     e.printStackTrace();
-                    enableDisableToolBars( false );
-                    ErrorMessage.showDialog( "execute cypher query", e );
+                    enableDisableToolBars(false);
+                    ErrorMessage.showDialog("execute cypher query", e);
                 }
             }
 
-        } );
+        });
     }
 
-    private void displayResultSet( CypherResultSet cypherResultSet )
-    {
+    private void displayResultSet(CypherResultSet cypherResultSet) {
         List<Map<String, Object>> resultSetList = cypherResultSet.getIterator();
         Collection<String> columns = cypherResultSet.getColumns();
 
-        jsonString = ApplicationUtil.toJson( resultSetList );
-        messageStatus.setText( cypherResultSet.getMessage() != null ? cypherResultSet.getMessage() : "" );
-        TableViewer tableViewer = new TableViewer( tabFolder, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL | SWT.MULTI
-                                                              | SWT.VIRTUAL | SWT.FULL_SELECTION );
-        createColumns( tableViewer, columns );
-        tableViewer.setContentProvider( new ArrayContentProvider() );
+        jsonString = ApplicationUtil.toJson(resultSetList);
+        messageStatus.setText(cypherResultSet.getMessage() != null ? cypherResultSet.getMessage() : "");
+        TableViewer tableViewer = new TableViewer(tabFolder, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL | SWT.MULTI
+                | SWT.VIRTUAL | SWT.FULL_SELECTION);
+        createColumns(tableViewer, columns);
+        tableViewer.setContentProvider(new ArrayContentProvider());
         Table table = tableViewer.getTable();
-        table.setHeaderVisible( true );
-        table.setLinesVisible( true );
-        tableViewer.setInput( resultSetList );
-        getSite().setSelectionProvider( tableViewer );
+        table.setHeaderVisible(true);
+        table.setLinesVisible(true);
+        tableViewer.setInput(resultSetList);
+        getSite().setSelectionProvider(tableViewer);
         CTabItem resultsTabItem = tabFolder.getSelection();
-        if ( resultsTabItem == null )
-        {
-            resultsTabItem = new CTabItem( tabFolder, SWT.NONE );
-            resultsTabItem.setText( "Results" );
-            tabFolder.setSelection( resultsTabItem );
+        if (resultsTabItem == null) {
+            resultsTabItem = new CTabItem(tabFolder, SWT.NONE);
+            resultsTabItem.setText("Results");
+            tabFolder.setSelection(resultsTabItem);
         }
-        resultsTabItem.setControl( table );
-        enableDisableToolBars( true );
+        resultsTabItem.setControl(table);
+        enableDisableToolBars(true);
     }
 
 }
